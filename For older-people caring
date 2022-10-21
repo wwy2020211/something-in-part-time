@@ -1,0 +1,112 @@
+//arduino  RFID  motor led
+#include <SoftwareSerial.h>
+#include<string.h>
+#include <Servo.h>
+SoftwareSerial mySerial(10, 11);// RX, TX
+Servo myservo;  // 定义Servo对象来控制
+int pos = 0;    // 角度存储变量
+int val = 0;
+int ledPin = 13;
+int status = 0;
+unsigned char incomingByte;
+//BB 00 22 00 00 22 7E 
+String value; 
+String s1=String("5e a9 a7");
+String s2=String("5a a0 ef");
+void setup()
+{
+  Serial.begin(115200);
+  pinMode(13, OUTPUT);
+  myservo.attach(9);  // 舵机控制线连接数字9
+  mySerial.begin(115200);
+  byte message[] = {0xBB,0x00,0x27,0x00,0x03,0x22,0x27,0x10,0x83,0x7E};
+  //byte message[]={0xBB,0x00,0x22,0x00,0x00,0x22,0x7E};
+  mySerial.write(message, sizeof(message));
+}
+int open_door()
+{
+ for (pos = 0; pos <180; pos ++) { // 0°到180°
+    // in steps of 1 degree
+    myservo.write(pos);              // 舵机角度写入
+    delay(1);                       // 等待转动到指定角度
+ }
+ return pos;
+}
+int close_door()
+{
+  for (pos = 180; pos > 0; pos --) { // 从180°到0°
+    myservo.write(pos);              // 舵机角度写入
+    delay(1);                       // 等待转动到指定角度
+  } 
+  return pos;
+}
+
+void loop()
+{ while(mySerial.available() <= 0)
+  {Serial.println("yes");
+   //Serial.println();
+   delay(5);
+   }
+   //searchCard();
+  //if (searchCard() != -1) {
+    //Serial.println("STart");
+    //if (searchRES[0] == 0x5E && searchRES[1] == 0x97 && searchRES[2] == 0x25 && searchRES[3] == 0xC7) {
+      //digitalWrite(13, HIGH);
+      //delay(1000);
+      //digitalWrite(13, LOW);
+      //delay(1000);
+    //}
+    //value+=String(Serial.read(),HEX);
+    //value+="";
+    
+  //}
+  
+  while(true){
+  
+  while (mySerial.available() > 0) {
+    incomingByte = mySerial.read();
+    //条件判断，    
+    value += String(incomingByte,HEX);
+    value += " ";
+  }
+  
+  if(strstr(value.c_str(),s1.c_str())){
+      Serial.println("old man");
+      Serial.println(pos);
+      if(pos>0){
+      pos=close_door();
+      }
+      //digitalWrite(13, HIGH);
+      //delay(1000);
+      //digitalWrite(13, LOW);
+      delay(5);
+      //delay(500);
+    }    
+  else if(strstr(value.c_str(),s2.c_str())){
+      Serial.println("doctor");
+      Serial.println(pos);
+      if(pos<=0){
+        pos=open_door();
+      }
+      //digitalWrite(13, HIGH);
+      //delay(1000);
+      //digitalWrite(13, LOW);
+      delay(5);
+      //delay(500);
+    } 
+  else{
+    if (value!="0 ")
+    {
+    Serial.println("NObody");
+    Serial.println(pos);
+    }
+  }
+  delay(3);
+  if (value!="0 ")
+  {
+  Serial.print(value);
+  Serial.println();
+  }
+  value="0 ";
+  }
+}
